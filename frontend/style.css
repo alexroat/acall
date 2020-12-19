@@ -1,0 +1,38 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 19-dic-2020, 2.04.09
+    Author     : alex
+*/
+
+.RowContact
+{
+    overflow: hidden;
+    background: lightblue;
+    border: 1px solid blue
+}
+
+.PanelChat .Icon
+{
+    font-size: 30px;
+    padding: 3px;
+
+}
+
+
+.BubbleChat.div.Wdg {
+    background: lightgreen;
+    padding: 8px;
+    border: 1px solid green;
+    margin: 5px;
+    border-radius: 5px;
+}
+
+textarea.textarea.Wdg.chat-input {
+    padding: 5px;
+    border-radius: 5px;
+    margin: 1px;
+}

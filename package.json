@@ -1,0 +1,37 @@
+{
+    "name": "acall",
+    "version": "1.0.0",
+    "keywords": [
+        "util",
+        "functional",
+        "server",
+        "client",
+        "browser"
+    ],
+    "author": "alex",
+    "contributors": [],
+    "dependencies": {
+        "express": "^4.17.1",
+        "express-ws": "^4.0.0"
+    },
+    "scripts": {
+        "watch-be": "nodemon -r esm main.js",
+        "watch-fe": "webpack -w",
+        "watch": "npm run watch-be & npm run watch-fe",
+        "gen-certs":"openssl req -nodes -new -x509 -keyout ./certs/server.key -out ./certs/server.cert"
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.12.8",
+        "@babel/core": "^7.12.9",
+        "@babel/preset-env": "^7.12.1",
+        "@webpack-cli/init": "^1.0.2",
+        "@babel/polyfill": "^7.12.1",
+        "babel-loader": "^8.2.2",
+        "bable-loader": "0.0.1-security",
+        "css-loader": "^5.0.1",
+        "esm": "^3.2.25",
+        "style-loader": "^2.0.0",
+        "webpack": "^5.11.0",
+        "webpack-cli": "^4.2.0"
+    }
+}
