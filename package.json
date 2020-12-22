@@ -12,13 +12,16 @@
     "contributors": [],
     "dependencies": {
         "express": "^4.17.1",
-        "express-ws": "^4.0.0"
+        "express-session": "^1.17.1",
+        "express-ws": "^4.0.0",
+        "node-persist": "^3.1.0",
+        "node-turn": "0.0.6"
     },
     "scripts": {
         "watch-be": "nodemon -r esm main.js",
         "watch-fe": "webpack -w",
         "watch": "npm run watch-be & npm run watch-fe",
-        "gen-certs":"openssl req -nodes -new -x509 -keyout ./certs/server.key -out ./certs/server.cert"
+        "gen-certs": "openssl req -nodes -new -x509 -keyout ./certs/server.key -out ./certs/server.cert"
     },
     "devDependencies": {
         "@babel/cli": "^7.12.8",

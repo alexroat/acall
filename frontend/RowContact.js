@@ -12,9 +12,10 @@ export default class RowContact extends Html.Div
     constructor(props)
     {
         super(props)
+        const {id,name} = this.props;
         this.image=new Html.Span().css({"background-image":randomImg()}).appendTo(this)
-        this.name=new Html.Span().text(randomText()).appendTo(this)
-        this.on("click",()=>ACallApp.get().setContent(new PanelChat()))
+        this.name=new Html.Span().text(name).appendTo(this)
+        this.on("click",()=>ACallApp.get().setContent(new PanelChat({id,name})))
     }
     
 }

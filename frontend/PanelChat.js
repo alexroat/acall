@@ -9,31 +9,43 @@ export default class PanelChat extends Box
     {
         super(props)
         this.header = new Box({horizontal: 1}).appendTo(this, {w: 40}).toggleClass("chat-header")
-        this.messages = new Html.Div().appendTo(this, {p: 1}).toggleClass("chat-message").css({overflow:"auto"})
+        this.messages = new Html.Div().appendTo(this, {p: 1}).toggleClass("chat-message").css({overflow: "auto"})
         this.footer = new Box({horizontal: 1}).appendTo(this, {w: 40}).toggleClass("chat-footer")
         new Icon({icon: "smile"}).appendTo(this.footer, {w: 40}).toggleClass("chat-btn-emoji")
         this.input = new Html.TextArea().appendTo(this.footer, {p: 1}).toggleClass("chat-input");
         new Icon({icon: "paper-plane"}).appendTo(this.footer, {w: 40}).toggleClass("chat-btn-send").on("click", () => this.send())
-        new Html.Div().text("Chat").appendTo(this.header, {p: 1}).toggleClass("chat-title");
+        new Html.Div().text(this.props.name).appendTo(this.header, {p: 1}).toggleClass("chat-title");
         new Icon({icon: "phone"}).appendTo(this.header, {w: 40}).toggleClass("chat-btn-call").on("click", () => this.call())
-        this.on("chat", (ev) => {this.messages.append(new BubbleChat({msg: ev.detail}));this.scrollBottom()})
+        this.connect((ev) => this.refresh())
 
     }
     send()
     {
-        ACallApp.get().sendMessage({type: "chat", text: this.input.val()})
+        const {id} = this.props;
+        ACallApp.get().sendMessage({type: "chat", dest:id, text: this.input.val()})
         this.input.val("").el.focus();
     }
     call()
     {
-        const pc = new PanelCall();
-        ACallApp.get().setContent(pc)
-        pc.playLocal();
+        const {id} = this.props;
+        const pc=ACallApp.get().getPanelCall()
+        pc.call(id)
     }
     scrollBottom()
     {
         this.messages.el.scrollTop = this.messages.el.scrollHeight;
         return this;
+    }
+    refresh()
+    {
+        const {id} = this.props;
+        const msgs = Object.values(Wdg.state.messages).filter((m)=>m.from==id || m.dest==id)
+        if (msgs.length != this.messages.children().length)
+        {
+            this.messages.removeAll();
+            for (var msg of msgs)
+                new BubbleChat({msg}).appendTo(this.messages);
+        }
     }
 
 }

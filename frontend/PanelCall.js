@@ -8,6 +8,8 @@ export default class PanelCall extends Box
     {
         super(props)
         this.video = new PanelVideo().appendTo(this, {p: 1}).toggleClass("chat-video")
+        this.video.playLocal();
+
     }
     send()
     {
@@ -17,7 +19,32 @@ export default class PanelCall extends Box
     async playLocal()
     {
         return this.video.playLocal();
+    }
+
+    getVideo(id)
+    {
+        var pv = this.find(PanelVideo).filter(p => p.props.id == id)[0]
+        if (!pv)
+            pv = new PanelVideo({id}).appendTo(this)
+        return pv;
+    }
+
+    async getUserMedia(constraints = {audio: false, video: true})
+    {
+        return new Promise(function (resolve, reject) {
+
+            navigator.getUserMedia(constraints, resolve, reject);
+        })
 
     }
 
+    async call(id)
+    {
+        const pc = await ACallApp.get().call(id)
+
+    }
+
+
 }
+
+

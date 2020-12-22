@@ -2,20 +2,33 @@ import fs from "fs"
 import https from "https"
 import express from "express"
 import expressWs from "express-ws"
+import session from "express-session"
+import { User, Room, MessageHandler} from "./all"
 
-import Connection from "./connection"
+import Turn from 'node-turn'
+var turn = new Turn({
+});
+turn.start();
 
-export default class App
+export  class App extends MessageHandler
 {
     constructor()
     {
+        super()
         this.port = 9000;
-
+        this.user = {};
     }
 
     async startServer()
     {
         this.app = express()
+
+        this.app.use(session({
+            secret: 'supersegreto',
+            resave: false,
+            saveUninitialized: true,
+            cookie: {secure: true}
+        }))
         var privateKey = fs.readFileSync('./certs/server.key');
         var certificate = fs.readFileSync('./certs/server.cert');
 
@@ -26,24 +39,24 @@ export default class App
             console.log(`Example app listening at http://localhost:${this.port}`)
         )
 
-        
+
         this.wsapp = expressWs(this.app, this.server)
-        this.app.use(express.static('public'));
+        this.app.ws('/', (ws, req) => {
+            const user = User.getUser(req.session.uid);
+            req.session.uid = user.id;
+            user.postMessage({type: "new_connection", ws, req});
+        });
 
-        this.app.ws('/', (ws, req) =>
-            new Connection(this, ws, req)
-        );
-    }
 
-    sendMessage(id, data)
-    {
-        this.conn[id].send(data)
-    }
+        this.app.use(express.static(__dirname + '/public'));
+        this.app.get("/:id", (req, res, next) => {
+            const u = User.getUser(req.session.uid)
+            req.session.uid = u.id;
+            res.sendFile(__dirname + "/public/index.html")
+        })
 
-    onMessage(msg, id)
-    {
-        console.log(id, msg)
-        Connection.sendToAll(msg)
+
+
     }
 
     static instance()
