@@ -82,20 +82,23 @@ export default class ACallApp extends App
         pc.addEventListener('connectionstatechange', event => {
             console.log(event)
             console.log(pc.connectionState)
-            if (vp && pc.connectionState=="disconnected")
-                vp.remove(),vp=null,delete this.peers[id];
+            if (vp && pc.connectionState == "disconnected")
+                vp.remove(), vp = null, delete this.peers[id];
         });
-        pc.addEventListener("track", e => {
+        pc.addEventListener("addstream", e => {
+            console.log(e)
             vp = new PanelVideo({id}).appendTo(this.getPanelCall(), {p: 1}, true)
-            vp.video.el.srcObject = e.streams[0];
+            vp.video.el.srcObject = e.stream;
         }, false);
         const localStream = await this.getUserMedia();
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        localStream.addEventListener("removetrack", e=>{console.log(e)})
+        localStream.addEventListener("removestream", e => {
+            console.log(e)
+        })
         return pc;
     }
 
-    async getUserMedia(constraints = {audio: false, video: true})
+    async getUserMedia(constraints = {audio: true, video: true})
     {
         return new Promise(function (resolve, reject) {
 
