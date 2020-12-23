@@ -7,29 +7,19 @@ export default class PanelCall extends Box
     constructor(props)
     {
         super(props)
-        this.video = new PanelVideo().appendTo(this, {p: 1}).toggleClass("chat-video")
-        this.video.playLocal();
-
-    }
-    send()
-    {
-        ACallApp.get().send({type: "msg", text: this.input.val()})
-        this.input.val("").el.focus();
-    }
-    async playLocal()
-    {
-        return this.video.playLocal();
+        this.getVideo().playLocal();
     }
 
     getVideo(id)
     {
         var pv = this.find(PanelVideo).filter(p => p.props.id == id)[0]
         if (!pv)
-            pv = new PanelVideo({id}).appendTo(this)
+            pv = new PanelVideo({id}).appendTo(this, {p: 1}, true);
         return pv;
     }
+    
 
-    async getUserMedia(constraints = {audio: false, video: true})
+    async getUserMedia(constraints = {audio: true, video: true})
     {
         return new Promise(function (resolve, reject) {
 
@@ -38,12 +28,12 @@ export default class PanelCall extends Box
 
     }
 
+
     async call(id)
     {
         const pc = await ACallApp.get().call(id)
 
     }
-
 
 }
 

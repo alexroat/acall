@@ -1,4 +1,4 @@
-import {Wdg, App, Box, ColoredBox} from "wdg"
+import {Wdg, App, Box, ColoredBox, Html} from "wdg"
 import PanelContacts from "./PanelContacts"
 import PanelChat from "./PanelChat"
 import PanelCall from "./PanelCall"
@@ -19,7 +19,19 @@ export default class ACallApp extends App
 
         this.connect((ev) => this.header.text(Wdg.state.name), true)
         this.connectWS()
+
+
+        this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
+        this.on("call-answered", ev => this.getPanelCall().getVideo(ev.detail.id));
+        this.on("call-track", ev => this.getPanelCall().getVideo(ev.detail.id).play(ev.detail.streams[0]));
     }
+
+    async showCallAnswerDialog(msg)
+    {
+        this.answer(msg);
+        //new Html.Div().appendTo(this, {w: 50}, true).on("click", ev => this.answer(msg)).css({background: "lightgreen"})
+    }
+
     setContent(x)
     {
         this.main.removeAll().append(x, {p: 1}).doLayout();
@@ -60,41 +72,24 @@ export default class ACallApp extends App
         return pc;
     }
 
-    async call(id)
-    {
-        this.getPanelCall()
-        const localStream = await this.getUserMedia();       
-        const pc = this.getPeer(id);
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        this.sendMessage({type: "call", dest: id, offer});
-        return pc
-    }
-
     getPeer(id)
     {
         if (this.peers[id])
             return this.peers[id];
-        var vp;
         const pc = new RTCPeerConnection(configuration);
-        this.peers[id] = pc
-        pc.addEventListener('connectionstatechange', async event => {
-            console.log(event)
-            console.log(pc.connectionState)
-            if (vp && pc.connectionState == "disconnected")
-                vp.close(), vp = null, delete this.peers[id];
-        });
-        pc.addEventListener("addstream", e => {
-            console.log(e)
-            vp = new PanelVideo({id}).appendTo(this.getPanelCall(), {p: 1}, true)
-            vp.video.el.srcObject = e.stream;
-        }, false);
-        console.log("ice listening")
+        pc.addEventListener("connectionstatechange", ev => {
+            console.log(ev);
+            this.trigger("call-state",{id,state:pc.connectionState})
+        })
+        pc.addEventListener("track", ev => {
+            console.log("TRACK",ev)
+            this.trigger("call-track",{id,track:ev.track,streams:ev.streams})
+        })
         pc.addEventListener('icecandidate', ice => {
             console.log("ice candidate", ice)
             this.sendMessage({type: "call", dest: id, ice: ice.candidate});
         });
+        this.peers[id] = pc
         return pc;
     }
 
@@ -114,28 +109,67 @@ export default class ACallApp extends App
         if (msg.offer)
         {
             console.log("OFFER", msg.offer)
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-            this.getPanelCall()
-            const localStream = await this.getUserMedia();
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            this.sendMessage({type: "call", dest: id, answer});
+            this.trigger("call-offer", msg)
         }
         if (msg.answer)
         {
             console.log("ANSWER", msg.answer)
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));   
+            this.trigger("call-answer", msg)
         }
         if (msg.ice)
         {
             console.log("ICE", msg.ice)
             try {
+                console.log(id)
                 await pc.addIceCandidate(new RTCIceCandidate(msg.ice));
             } catch (e) {
                 console.error('Error adding received ice candidate', e);
             }
         }
+    }
+
+    async call(id, localStream)
+    {
+        const pc = this.getPeer(id);
+        localStream = localStream || await this.getUserMedia();
+        localStream.getTracks().forEach(track => {
+            console.log("sending track");
+            pc.addTrack(track, localStream)
+        });
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        this.sendMessage({type: "call", dest: id, offer});
+        const answer = await new Promise((resolve, reject) => {
+            this.on("call-answer", ev => {
+                if (ev.detail.from == id)
+                    resolve(ev.detail.answer);
+            })
+        });
+        console.log("got answer")
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        
+        //add new video Panel
+//        this.getPanelCall().addRemoteVideo(id, pc);
+        return pc;
+    }
+
+    async answer(msg, localStream)
+    {
+        const id = msg.from;
+        const pc = this.getPeer(id);
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+        localStream = localStream || await this.getUserMedia();
+        localStream.getTracks().forEach(track => {
+            console.log("sending track");
+            pc.addTrack(track, localStream)
+        });
+        
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        this.sendMessage({type: "call", dest: id, answer});
+        this.trigger("call-answered",{id})
+        return pc;
     }
 
     createRoom()
@@ -164,11 +198,11 @@ const configuration = {iceServers: [
             credential: 'password',
             username: 'username'
         },
-        {
-            url: `turn:${window.location.hostname}:3477`,
-            credential: 'password',
-            username: 'username'
-        },
+//        {
+//            url: `turn:${window.location.hostname}:3477`,
+//            credential: 'password',
+//            username: 'username'
+//        },
         {url: 'stun:stun.l.google.com:19302'},
         {url: 'stun:stun1.l.google.com:19302'},
         {url: 'stun:stun2.l.google.com:19302'},

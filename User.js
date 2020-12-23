@@ -6,7 +6,7 @@ export class User extends MessageHandler
 constructor()
 {
     super();
-    this.id = Math.random();
+    this.id = `USER${Math.random()}`;
     this.name = `user ${this.id}`;
     User.pool[this.id] = this;
     this.contacts = {};
@@ -14,15 +14,17 @@ constructor()
     this.messages = {};
 
 
+    console.log(Object.keys(User.pool))
     for (var u of Object.values(User.pool))
         u.addContact(this), this.addContact(u);
+    console.log(Object.keys(User.pool))
 }
 static pool = {}
 static getUser(uid)
 {
+    console.log("requesting uid", uid)
     if (User.pool[uid])
         return User.pool[uid];
-    return new User();
 }
 
 getProfile()
@@ -43,7 +45,7 @@ getState()
     }
     handleremote_chat(msg)
     {
-        var msg = {...msg, type: "chat", id: Math.random(), from: this.id}
+        var msg = {...msg, type: "chat", from: this.id, id: `CHAT${Math.random()}`}
         User.getUser(msg.dest).postMessage(msg)
         this.postMessage(msg)
     }
@@ -73,13 +75,12 @@ getState()
     handle_new_connection(msg)
     {
         const {ws, req} = msg
-        const id = Math.random();
+        const id = `CONN${Math.random()}`;
         const connection = {ws, req, id};
         this.conn[id] = connection;
 
         ws.on('message', (msg) => {
-            const id = Math.random()
-            var msg = {...JSON.parse(msg), id, from: this.id};
+            var msg = {...JSON.parse(msg), from: this.id};
             console.log(msg)
             const h = this[`handleremote_${msg.type}`]
             if (h)
