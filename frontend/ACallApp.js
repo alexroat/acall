@@ -24,6 +24,7 @@ export default class ACallApp extends App
         this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
         this.on("call-answered", ev => this.getPanelCall().getVideo(ev.detail.id));
         this.on("call-track", ev => this.getPanelCall().getVideo(ev.detail.id).play(ev.detail.streams[0]));
+        this.on("call-state", ev => {if (ev.detail.state=="disconnected") this.getPanelCall().getVideo(ev.detail.id).close()});
     }
 
     async showCallAnswerDialog(msg)
