@@ -62,39 +62,39 @@ export default class ACallApp extends App
 
     async call(id)
     {
-        const pc = await this.getPeer(id);
+        this.getPanelCall()
+        const localStream = await this.getUserMedia();       
+        const pc = this.getPeer(id);
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         this.sendMessage({type: "call", dest: id, offer});
         return pc
     }
 
-    async getPeer(id)
+    getPeer(id)
     {
         if (this.peers[id])
             return this.peers[id];
         var vp;
         const pc = new RTCPeerConnection(configuration);
         this.peers[id] = pc
-        pc.addEventListener('icecandidate', ice => {
-            this.sendMessage({type: "call", dest: id, ice: ice.candidate});
-        });
-        pc.addEventListener('connectionstatechange', event => {
+        pc.addEventListener('connectionstatechange', async event => {
             console.log(event)
             console.log(pc.connectionState)
             if (vp && pc.connectionState == "disconnected")
-                vp.remove(), vp = null, delete this.peers[id];
+                vp.close(), vp = null, delete this.peers[id];
         });
         pc.addEventListener("addstream", e => {
             console.log(e)
             vp = new PanelVideo({id}).appendTo(this.getPanelCall(), {p: 1}, true)
             vp.video.el.srcObject = e.stream;
         }, false);
-        const localStream = await this.getUserMedia();
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        localStream.addEventListener("removestream", e => {
-            console.log(e)
-        })
+        console.log("ice listening")
+        pc.addEventListener('icecandidate', ice => {
+            console.log("ice candidate", ice)
+            this.sendMessage({type: "call", dest: id, ice: ice.candidate});
+        });
         return pc;
     }
 
@@ -109,22 +109,29 @@ export default class ACallApp extends App
 
     async handleremote_call(msg)
     {
-        const pc = await this.getPeer(msg.from);
+        const id = msg.from
+        const pc = this.getPeer(id);
         if (msg.offer)
         {
+            console.log("OFFER", msg.offer)
             await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+            this.getPanelCall()
+            const localStream = await this.getUserMedia();
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            this.sendMessage({type: "call", dest: msg.from, answer});
+            this.sendMessage({type: "call", dest: id, answer});
         }
         if (msg.answer)
         {
-            await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+            console.log("ANSWER", msg.answer)
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));   
         }
         if (msg.ice)
         {
+            console.log("ICE", msg.ice)
             try {
-                await pc.addIceCandidate(msg.ice);
+                await pc.addIceCandidate(new RTCIceCandidate(msg.ice));
             } catch (e) {
                 console.error('Error adding received ice candidate', e);
             }
@@ -154,8 +161,13 @@ const configuration = {iceServers: [
 //        {url: 'stun:stun.schlund.de'},
         {
             url: `turn:${window.location.hostname}:3478`,
-            credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-            username: '28224511:1379330808'
+            credential: 'password',
+            username: 'username'
+        },
+        {
+            url: `turn:${window.location.hostname}:3477`,
+            credential: 'password',
+            username: 'username'
         },
         {url: 'stun:stun.l.google.com:19302'},
         {url: 'stun:stun1.l.google.com:19302'},

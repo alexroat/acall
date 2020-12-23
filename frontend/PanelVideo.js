@@ -3,12 +3,12 @@ import ACallApp from "./ACallApp";
 
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-export default class PanelVideo extends Box
+export default class PanelVideo extends Html.Div
 {
     constructor(props)
     {
         super(props)
-        this.video = new Html.Video().attr({autoplay: 1}).appendTo(this, {p: 1}).toggleClass("chat-video")
+        this.video = new Html.Video().attr({autoplay: 1}).appendTo(this).toggleClass("chat-video")
     }
 
     async getUserMedia(constraints = {audio: false, video: true})
@@ -25,6 +25,13 @@ export default class PanelVideo extends Box
         const stream = await this.getUserMedia();
         this.video.el.srcObject = stream;
 
+    }
+    
+    close()
+    {
+        const p = this.parent();
+        p && (this.remove(),p.doLayout())
+        return this;
     }
 
 }

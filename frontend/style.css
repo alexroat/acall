@@ -36,3 +36,9 @@ textarea.textarea.Wdg.chat-input {
     border-radius: 5px;
     margin: 1px;
 }
+
+video.video.Wdg.chat-video {
+    width: 100%;
+    object-fit: cover;
+    height: 100%;
+}

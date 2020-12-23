@@ -15,7 +15,8 @@
         "express-session": "^1.17.1",
         "express-ws": "^4.0.0",
         "node-persist": "^3.1.0",
-        "node-turn": "0.0.6"
+        "node-turn": "0.0.6",
+        "wdg": "^1.0.2"
     },
     "scripts": {
         "watch-be": "nodemon -r esm main.js",

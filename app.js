@@ -6,8 +6,13 @@ import session from "express-session"
 import { User, Room, MessageHandler} from "./all"
 
 import Turn from 'node-turn'
-var turn = new Turn({
-});
+        var turn = new Turn({
+            listeningPort: 3477,
+            authMech: 'long-term',
+            credentials: {
+                username: "password"
+            }
+        });
 turn.start();
 
 export  class App extends MessageHandler
@@ -15,7 +20,7 @@ export  class App extends MessageHandler
     constructor()
     {
         super()
-        this.port = 9000;
+        this.port = 9123;
         this.user = {};
     }
 
