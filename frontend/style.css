@@ -42,3 +42,20 @@ video.video.Wdg.chat-video {
     object-fit: cover;
     height: 100%;
 }
+
+
+i.FloatingButton.Icon.Wdg.fas.fa-phone.calldrop {
+    background: red;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 32px;
+    text-align: center;
+    bottom: 10%;
+    position: absolute;
+    padding: 10px;
+    font-size: 32px;
+    border-radius: 32px;
+    box-shadow: 5px 5px 5px #888888;
+}

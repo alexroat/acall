@@ -1,4 +1,4 @@
-import {Box, Html, Icon} from "wdg"
+import {Box, Html, Icon, FloatingAction} from "wdg"
 
 
 export class PanelVideo extends Html.Div
@@ -37,6 +37,14 @@ export class PanelVideo extends Html.Div
 
 }
 
+export class FloatingButton extends Icon
+{
+    constructor(props)
+    {
+        super(props)
+    }
+}
+
 export class PanelCall extends Box
 {
     constructor(props)
@@ -48,8 +56,19 @@ export class PanelCall extends Box
         this.on("call-answered", ev => this.getVideo(ev.detail.id));
         this.on("call-track", ev => this.getVideo(ev.detail.id).play(ev.detail.streams[0]));
         this.on("call-state", ev => {
-            if (ev.detail.state == "disconnected")
-                this.getVideo(ev.detail.id).close()
+            switch (ev.detail.state)
+            {
+                case "disconnected":
+                case "closed":
+                    const id = ev.detail.id;
+                    this.getVideo(id).close()
+                    delete this.peers[id];
+                    if (!Object.entries(this.peers).length)
+                        this.toggle(false)
+                    break;
+            }
+            console.log(ev.detail.state, this.peers)
+
         });
         this.on("call-ice", async ev => {
             const msg = ev.detail;
@@ -65,6 +84,9 @@ export class PanelCall extends Box
         this.on("call-rxsignal", ev =>
             this.recvSignal(ev.detail)
         );
+
+        new FloatingButton({icon: "phone", ignore: true}).toggleClass("calldrop").appendTo(this).on("click", ev => this.drop())
+
     }
 
     recvSignal(msg)
@@ -153,6 +175,15 @@ export class PanelCall extends Box
         this.sendSignal({type: "call", dest: id, answer});
         this.trigger("call-answered", {id})
         return pc;
+    }
+
+    async drop()
+    {
+        for (var id in this.peers)
+        {
+            this.peers[id].close();
+            this.trigger("call-state", {id, state: this.peers[id].connectionState})
+        }
     }
 
     getPeer(id)
