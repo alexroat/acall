@@ -23,9 +23,15 @@ export class PanelVideo extends Html.Div
         this.video.el.srcObject = stream;
     }
 
-    async playLocal()
+    async stop()
     {
-        this.play(await this.getUserMedia());
+        this.video.el.srcObject && this.video.el.srcObject.getTracks().forEach(t => t.stop())
+        this.video.el.srcObject=null;
+    }
+
+    getStream()
+    {
+        return this.video.el.srcObject;
     }
 
     close()
@@ -50,7 +56,6 @@ export class PanelCall extends Box
     constructor(props)
     {
         super(props)
-        this.getVideo().playLocal();
         this.peers = {}
         this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
         this.on("call-answered", ev => this.getVideo(ev.detail.id));
@@ -64,7 +69,7 @@ export class PanelCall extends Box
                     this.getVideo(id).close()
                     delete this.peers[id];
                     if (!Object.entries(this.peers).length)
-                        this.toggle(false)
+                        this.toggle(false).toggleLocalVideo(false)
                     break;
             }
             console.log(ev.detail.state, this.peers)
@@ -87,6 +92,15 @@ export class PanelCall extends Box
 
         new FloatingButton({icon: "phone", ignore: true}).toggleClass("calldrop").appendTo(this).on("click", ev => this.drop())
 
+    }
+
+    async toggleLocalVideo(enable)
+    {
+        const lv = this.getVideo();
+        if (enable)
+            lv.play(await this.getUserMedia());
+        else
+            lv.stop();
     }
 
     recvSignal(msg)
@@ -136,10 +150,11 @@ export class PanelCall extends Box
 
     }
 
-    async call(id, localStream)
+    async call(id)
     {
         const pc = this.getPeer(id);
-        localStream = localStream || await this.getUserMedia();
+        await this.toggleLocalVideo(true)
+        const localStream = this.getVideo().getStream()
         localStream.getTracks().forEach(track => {
             console.log("sending track");
             pc.addTrack(track, localStream)
@@ -159,12 +174,13 @@ export class PanelCall extends Box
         return pc;
     }
 
-    async answer(msg, localStream)
+    async answer(msg)
     {
         const id = msg.from;
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-        localStream = localStream || await this.getUserMedia();
+         await this.toggleLocalVideo(true)
+        const localStream = this.getVideo().getStream()
         localStream.getTracks().forEach(track => {
             console.log("sending track");
             pc.addTrack(track, localStream)
