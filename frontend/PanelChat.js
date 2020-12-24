@@ -1,6 +1,5 @@
 import {Box, Html, Icon} from "wdg"
 import ACallApp from "./ACallApp"
-import PanelCall from "./PanelCall"
 import BubbleChat from "./BubbleChat"
 
 export default class PanelChat extends Box
@@ -27,9 +26,7 @@ export default class PanelChat extends Box
     }
     call()
     {
-        const {id} = this.props;
-        const pc=ACallApp.get().getPanelCall()
-        pc.call(id)
+        ACallApp.get().call(this.props.id)
     }
     scrollBottom()
     {
