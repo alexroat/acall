@@ -26,7 +26,7 @@ export class PanelVideo extends Html.Div
     async stop()
     {
         this.video.el.srcObject && this.video.el.srcObject.getTracks().forEach(t => t.stop())
-        this.video.el.srcObject=null;
+        this.video.el.srcObject = null;
     }
 
     getStream()
@@ -60,6 +60,7 @@ export class PanelCall extends Box
         this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
         this.on("call-answered", ev => this.getVideo(ev.detail.id));
         this.on("call-track", ev => this.getVideo(ev.detail.id).play(ev.detail.streams[0]));
+        this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
             switch (ev.detail.state)
             {
@@ -72,8 +73,6 @@ export class PanelCall extends Box
                         this.toggle(false).toggleLocalVideo(false)
                     break;
             }
-            console.log(ev.detail.state, this.peers)
-
         });
         this.on("call-ice", async ev => {
             const msg = ev.detail;
@@ -107,18 +106,23 @@ export class PanelCall extends Box
     {
         if (msg.offer)
         {
-            console.log("OFFER", msg.offer)
+            //console.log("OFFER", msg)
             this.trigger("call-offer", msg)
         }
         if (msg.answer)
         {
-            console.log("ANSWER", msg.answer)
+            //console.log("ANSWER", msg)
             this.trigger("call-answer", msg)
         }
         if (msg.ice)
         {
-            console.log("ICE", msg.ice)
+            //console.log("ICE", msg)
             this.trigger("call-ice", msg)
+        }
+        if (msg.terminate)
+        {
+            //console.log("TERMINATE", msg)
+            this.trigger("call-terminate", msg)
         }
     }
 
@@ -155,10 +159,9 @@ export class PanelCall extends Box
         const pc = this.getPeer(id);
         await this.toggleLocalVideo(true)
         const localStream = this.getVideo().getStream()
-        localStream.getTracks().forEach(track => {
-            console.log("sending track");
+        localStream.getTracks().forEach(track =>
             pc.addTrack(track, localStream)
-        });
+        );
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -169,7 +172,6 @@ export class PanelCall extends Box
                     resolve(ev.detail.answer);
             })
         });
-        console.log("got answer")
         await pc.setRemoteDescription(new RTCSessionDescription(answer));
         return pc;
     }
@@ -179,12 +181,11 @@ export class PanelCall extends Box
         const id = msg.from;
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-         await this.toggleLocalVideo(true)
+        await this.toggleLocalVideo(true)
         const localStream = this.getVideo().getStream()
-        localStream.getTracks().forEach(track => {
-            console.log("sending track");
+        localStream.getTracks().forEach(track =>
             pc.addTrack(track, localStream)
-        });
+        );
 
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -196,10 +197,16 @@ export class PanelCall extends Box
     async drop()
     {
         for (var id in this.peers)
-        {
-            this.peers[id].close();
-            this.trigger("call-state", {id, state: this.peers[id].connectionState})
-        }
+            this.terminate(id);
+    }
+
+    async terminate(id)
+    {
+        if (!this.peers[id])
+            return;
+        this.peers[id].close();
+        this.trigger("call-state", {id, state: this.peers[id].connectionState})
+        this.sendSignal({type: "call", dest: id, terminate: 1});
     }
 
     getPeer(id)
@@ -207,18 +214,15 @@ export class PanelCall extends Box
         if (this.peers[id])
             return this.peers[id];
         const pc = new RTCPeerConnection(configuration);
-        pc.addEventListener("connectionstatechange", ev => {
-            console.log(ev);
+        pc.addEventListener("connectionstatechange", ev =>
             this.trigger("call-state", {id, state: pc.connectionState})
-        })
-        pc.addEventListener("track", ev => {
-            console.log("TRACK", ev)
+        )
+        pc.addEventListener("track", ev =>
             this.trigger("call-track", {id, track: ev.track, streams: ev.streams})
-        })
-        pc.addEventListener('icecandidate', ice => {
-            console.log("ice candidate", ice)
-            this.sendSignal({type: "call", dest: id, ice: ice.candidate});
-        });
+        )
+        pc.addEventListener('icecandidate', ice =>
+            this.sendSignal({type: "call", dest: id, ice: ice.candidate})
+        );
         this.peers[id] = pc
         return pc;
     }
