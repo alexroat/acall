@@ -105,7 +105,11 @@ export class PanelCall extends Box
     {
         const lv = this.getVideo();
         if (enable)
-            lv.setMuted(true).play(await this.getLocalStream());
+        {
+            const ls = await this.getLocalStream();
+            const s= new MediaStream(ls.getVideoTracks())
+            lv.play(s)
+        }
         else
             this.stopLocalStream(),lv.stop();
     }
