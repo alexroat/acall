@@ -44,5 +44,10 @@ export default class PanelChat extends Box
                 new BubbleChat({msg}).appendTo(this.messages);
         }
     }
+    doLayout()
+    {
+        Wdg.setUrl(`/chat/${this.props.id}`)
+        return super.doLayout()
+    }
 
 }

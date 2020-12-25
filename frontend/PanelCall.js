@@ -1,4 +1,7 @@
-import {Box, Html, Icon, FloatingAction} from "wdg"
+import {Box, Html, Icon, FloatingAction} from "wdg";
+
+
+const closeStream = (s) => s&& s.getTracks().forEach(t => t.stop())
 
 
 export class PanelVideo extends Html.Div
@@ -17,6 +20,12 @@ export class PanelVideo extends Html.Div
         })
 
     }
+    
+    setMuted(muted)
+    {
+        this.video.attr({muted})
+        return this;
+    }
 
     async play(stream)
     {
@@ -25,7 +34,6 @@ export class PanelVideo extends Html.Div
 
     async stop()
     {
-        this.video.el.srcObject && this.video.el.srcObject.getTracks().forEach(t => t.stop())
         this.video.el.srcObject = null;
     }
 
@@ -97,9 +105,9 @@ export class PanelCall extends Box
     {
         const lv = this.getVideo();
         if (enable)
-            lv.play(await this.getUserMedia());
+            lv.setMuted(true).play(await this.getLocalStream());
         else
-            lv.stop();
+            this.stopLocalStream(),lv.stop();
     }
 
     recvSignal(msg)
@@ -153,14 +161,28 @@ export class PanelCall extends Box
         })
 
     }
+    
+    
+    async getLocalStream()
+    {
+        if (!this.localstream)
+            this.localstream=await this.getUserMedia()
+        return this.localstream;
+    }
+    
+    async stopLocalStream()
+    {
+        closeStream(this.localstream)
+        this.localstream=null;
+    }
 
     async call(id)
     {
         const pc = this.getPeer(id);
         await this.toggleLocalVideo(true)
-        const localStream = this.getVideo().getStream()
-        localStream.getTracks().forEach(track =>
-            pc.addTrack(track, localStream)
+        const stream=await this.getLocalStream()
+        stream.getTracks().forEach(track =>
+            pc.addTrack(track, stream)
         );
 
         const offer = await pc.createOffer();
@@ -182,9 +204,9 @@ export class PanelCall extends Box
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
         await this.toggleLocalVideo(true)
-        const localStream = this.getVideo().getStream()
-        localStream.getTracks().forEach(track =>
-            pc.addTrack(track, localStream)
+        const stream=await this.getLocalStream()
+        stream.getTracks().forEach(track =>
+            pc.addTrack(track, stream)
         );
 
         const answer = await pc.createAnswer();

@@ -1,7 +1,9 @@
-import {Wdg, App, Box, ColoredBox, Html} from "wdg"
+import {Wdg, App, Box, ColoredBox, Html, randomText} from "wdg"
 import PanelContacts from "./PanelContacts"
 import PanelChat from "./PanelChat"
 import {PanelCall} from "./PanelCall"
+
+window.Wdg=Wdg;
 
 export default class ACallApp extends App
 {
@@ -12,7 +14,7 @@ export default class ACallApp extends App
         this.header = new ColoredBox().appendTo(this, {w: "auto"}).text("A Call")
         this.main = new Box().appendTo(this, {p: 1})
         this.footer = new ColoredBox().appendTo(this, {w: 30})
-        this.panelCall = new PanelCall().appendTo(this,{ignore:1}).toggle(false).expand();
+        this.panelCall = new PanelCall().appendTo(this, {ignore: 1}).toggle(false).expand();
 
         this.setContent(new PanelContacts())
 
@@ -20,8 +22,11 @@ export default class ACallApp extends App
         this.connectWS()
 
 
-        this.panelCall.on("call-txsignal",ev=>this.sendMessage(ev.detail))
+        this.panelCall.on("call-txsignal", ev => this.sendMessage(ev.detail))
+        
     }
+    
+    
 
     async showCallAnswerDialog(msg)
     {
@@ -32,6 +37,7 @@ export default class ACallApp extends App
     setContent(x)
     {
         this.main.removeAll().append(x, {p: 1}).doLayout();
+        return this;
     }
     connectWS()
     {
@@ -60,21 +66,21 @@ export default class ACallApp extends App
 
     async handleremote_call(msg)
     {
-       if (msg.offer)
-           this.panelCall.toggle(true).doLayout()
-       this.panelCall.trigger("call-rxsignal",msg)
+        if (msg.offer)
+            this.panelCall.toggle(true).doLayout()
+        this.panelCall.trigger("call-rxsignal", msg)
     }
 
     createRoom()
     {
         this.sendMessage({type: "room_create"})
     }
-    
+
     call(id)
-    {        
+    {
         this.panelCall.toggle(true).doLayout().call(id)
     }
-    
+
 }
 
 

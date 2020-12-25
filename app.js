@@ -47,22 +47,23 @@ export  class App extends MessageHandler
 
         this.wsapp = expressWs(this.app, this.server)
         this.app.ws('/', (ws, req) => {
-            console.log("ws",req.session.uid)
+            console.log("ws", req.session.uid)
             const user = User.getUser(req.session.uid) || new User();
             req.session.uid = user.id;
             user.postMessage({type: "new_connection", ws, req});
         });
 
 
-        
-        this.app.get("/", (req, res, next) => {
-            console.log("get",req.session.uid)
+        this.app.use(express.static(__dirname + '/public'));
+        this.app.get("*", (req, res, next) => {
+            console.log(req.url)
+            console.log("get", req.session.uid)
             const u = User.getUser(req.session.uid) || new User();
             req.session.uid = u.id;
             res.sendFile(__dirname + "/public/index.html")
         })
 
-        this.app.use(express.static(__dirname + '/public'));
+
 
     }
 
