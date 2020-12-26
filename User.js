@@ -79,7 +79,7 @@ getState()
 
         ws.on('message', (msg) => {
             var msg = {...JSON.parse(msg), from: this.id};
-            console.log(msg)
+            //console.log(msg)
             const h = this[`handleremote_${msg.type}`]
             if (h)
                 h.call(this, msg);

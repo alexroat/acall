@@ -11,10 +11,9 @@ export class Room extends User
 
 
         this.on("call-answered", ev => console.log("CALL ANSWERED"));
-        this.on("call-track", ev => console.log("NEW TRACK"));
+        this.on("call-track", ev => this.cast(ev.detail));
 //        this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
-            console.log(ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":
@@ -24,6 +23,15 @@ export class Room extends User
                     break;
             }
         });
+    }
+    
+    cast(msg)
+    {
+        const {id,track,streams} = msg;
+        console.log(msg)
+        for (var i in this.peers)
+            if (i!=id)
+                this.peers[id].addTrack(track, streams[0])
     }
 
     handle_chat(msg)
@@ -135,7 +143,6 @@ export class Room extends User
 
     async answer(msg)
     {
-        console.log("ANSWERING")
         const id = msg.from;
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
