@@ -14,6 +14,7 @@ export class Room extends User
         this.on("call-track", ev => console.log("NEW TRACK"));
 //        this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
+            console.log(ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":
@@ -73,24 +74,36 @@ export class Room extends User
         return this;
     }
 
+    sendChat(text)
+    {
+        this.postMessage({type: "chat", from: this.id, dest: this.id, text})
+    }
+
     sendSignal(msg)
     {
         msg.from = this.id;
         this.postMessage(msg)
         return this;
     }
+    
+    //  see this https://stackoverflow.com/questions/59546739/using-simple-peer-to-broadcast-live-webcam-video-nodejs
 
     getPeer(id)
     {
         if (this.peers[id])
             return this.peers[id];
 //        const pc = new RTCPeerConnection(configuration);
+//iceServerList = {'iceServers':[{'url': 'stun:stun.l.google.com:19302'}]};
+//
+//pcConfig = iceServerList || {"iceServers": [] };
+//pcOptions = { "optional": [{"DtlsSrtpKeyAgreement": true} ] };
+        const pcOptions = {"optional": [{"DtlsSrtpKeyAgreement": true}]};
         const pc = new RTCPeerConnection({
             portRange: {
                 min: 10000, // defaults to 0
                 max: 20000  // defaults to 65535
             }
-        });
+        }, pcOptions);
         pc.addEventListener("connectionstatechange", ev =>
             this.trigger("call-state", {id, state: pc.connectionState})
         )
@@ -122,6 +135,7 @@ export class Room extends User
 
     async answer(msg)
     {
+        console.log("ANSWERING")
         const id = msg.from;
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
