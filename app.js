@@ -3,7 +3,8 @@ import https from "https"
 import express from "express"
 import expressWs from "express-ws"
 import session from "express-session"
-import { User, Room, MessageHandler,MsServer} from "./all"
+import cookieParser from 'cookie-parser'
+import { User, Room, MessageHandler, MsServer} from "./all"
 
 import Turn from 'node-turn'
         var turn = new Turn({
@@ -27,7 +28,7 @@ export  class App extends MessageHandler
     async startServer()
     {
         this.app = express()
-
+        this.app.use(cookieParser())
         this.app.use(session({
             secret: 'supersegreto',
             resave: false,
@@ -36,14 +37,14 @@ export  class App extends MessageHandler
         }))
         var privateKey = fs.readFileSync('./certs/server.key');
         var certificate = fs.readFileSync('./certs/server.cert');
-
+        
+        
         this.server = https.createServer({
             key: privateKey,
             cert: certificate
         }, this.app).listen(this.port, () =>
             console.log(`Example app listening at http://localhost:${this.port}`)
         )
-
 
         this.wsapp = expressWs(this.app, this.server)
         this.app.ws('/', (ws, req) => {
@@ -56,14 +57,14 @@ export  class App extends MessageHandler
 
         this.app.use(express.static(__dirname + '/public'));
         this.app.get("*", (req, res, next) => {
-            console.log(req.url)
+            //console.log(req.url)
             console.log("get", req.session.uid)
             const u = User.getUser(req.session.uid) || new User();
             req.session.uid = u.id;
             res.sendFile(__dirname + "/public/index.html")
         })
 
-
+        
 
     }
 

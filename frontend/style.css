@@ -8,14 +8,16 @@ and open the template in the editor.
     Author     : alex
 */
 
-.RowContact
-{
+.RowContact {
     overflow: hidden;
     background: lightblue;
-    border: 1px solid blue
+    border: 1px solid blue;
+    padding: 3px;
+    margin: 5px;
+    border-radius: 5px;
 }
 
-.PanelChat .Icon
+.Icon
 {
     font-size: 30px;
     padding: 3px;
@@ -23,12 +25,19 @@ and open the template in the editor.
 }
 
 
-.BubbleChat.div.Wdg {
+.BubbleChat>span {
     background: lightgreen;
     padding: 8px;
     border: 1px solid green;
     margin: 5px;
     border-radius: 5px;
+    display: inline-block;
+    max-width: 80%;
+    word-break: break-word;
+}
+
+.BubbleChat.div.Wdg.ownmessage {
+    text-align: right;
 }
 
 textarea.textarea.Wdg.chat-input {

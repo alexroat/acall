@@ -7,7 +7,9 @@ export default class BubbleChat extends Html.Div
     constructor(props)
     {
         super(props);
-        this.text(this.props.msg.text)
+        
+        new Html.Span().text(this.props.msg.text).appendTo(this);
+        this.toggleClass("ownmessage",this.props.msg.from==Wdg.state.id);
     }
 }
 

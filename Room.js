@@ -34,7 +34,7 @@ export class Room extends User
         console.log(msg)
         //this.ms.addTrack(track)
         for (var i in this.peers)
-            if (i!=id)
+            //if (i!=id)
                 this.peers[id].addTrack(track, this.ms)
         
     }
