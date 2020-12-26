@@ -107,12 +107,6 @@ export class Room extends User
     async call(id)
     {
         const pc = this.getPeer(id);
-        await this.toggleLocalVideo(true)
-        const stream = await this.getLocalStream()
-        stream.getTracks().forEach(track =>
-            pc.addTrack(track, stream)
-        );
-
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         this.sendSignal({type: "call", dest: id, offer});
