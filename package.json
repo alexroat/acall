@@ -14,9 +14,11 @@
         "express": "^4.17.1",
         "express-session": "^1.17.1",
         "express-ws": "^4.0.0",
+        "mediasoup": "^3.6.29",
         "node-persist": "^3.1.0",
         "node-turn": "0.0.6",
-        "wdg": "^1.0.2"
+        "wdg": "^1.0.2",
+        "wrtc": "^0.4.6"
     },
     "scripts": {
         "watch-be": "nodemon -r esm main.js",

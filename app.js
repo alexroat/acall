@@ -3,7 +3,7 @@ import https from "https"
 import express from "express"
 import expressWs from "express-ws"
 import session from "express-session"
-import { User, Room, MessageHandler} from "./all"
+import { User, Room, MessageHandler,MsServer} from "./all"
 
 import Turn from 'node-turn'
         var turn = new Turn({

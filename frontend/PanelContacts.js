@@ -23,10 +23,6 @@ export default class PanelContacts extends Box
             new RowContact({...Wdg.state.contacts[id]}).appendTo(this.contacts, {w: 50})
     }
 
-    doLayout()
-    {
-        Wdg.setUrl(`/contact`)
-        return super.doLayout()
-    }
+
 
 }

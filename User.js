@@ -14,15 +14,13 @@ constructor()
     this.messages = {};
 
 
-    console.log(Object.keys(User.pool))
     for (var u of Object.values(User.pool))
         u.addContact(this), this.addContact(u);
-    console.log(Object.keys(User.pool))
 }
 static pool = {}
 static getUser(uid)
 {
-    console.log("requesting uid", uid)
+    //console.log("requesting uid", uid)
     if (User.pool[uid])
         return User.pool[uid];
 }
