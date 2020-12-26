@@ -70,6 +70,7 @@ export class PanelCall extends Box
         this.on("call-track", ev => this.getVideo(ev.detail.id).play(ev.detail.streams[0]));
         this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
+            console.log("### "+ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":

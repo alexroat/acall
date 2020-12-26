@@ -1,5 +1,5 @@
 import {User} from "./all"
-        const {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription} = require('wrtc');
+        const {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, MediaStream} = require('wrtc');
 export class Room extends User
 {
     constructor()
@@ -9,11 +9,14 @@ export class Room extends User
         this.peers = {};
         this._evl = {};
 
+        this.ms = new MediaStream()
+
 
         this.on("call-answered", ev => console.log("CALL ANSWERED"));
         this.on("call-track", ev => this.cast(ev.detail));
 //        this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
+            console.log("### "+ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":
@@ -24,14 +27,16 @@ export class Room extends User
             }
         });
     }
-    
+
     cast(msg)
     {
-        const {id,track,streams} = msg;
+        const {id, track, streams} = msg;
         console.log(msg)
+        //this.ms.addTrack(track)
         for (var i in this.peers)
             if (i!=id)
-                this.peers[id].addTrack(track, streams[0])
+                this.peers[id].addTrack(track, this.ms)
+        
     }
 
     handle_chat(msg)
@@ -90,10 +95,10 @@ export class Room extends User
     sendSignal(msg)
     {
         msg.from = this.id;
-        this.postMessage(msg)
+        User.getUser(msg.dest).postMessage(msg)
         return this;
     }
-    
+
     //  see this https://stackoverflow.com/questions/59546739/using-simple-peer-to-broadcast-live-webcam-video-nodejs
 
     getPeer(id)
@@ -129,7 +134,13 @@ export class Room extends User
     {
         const pc = this.getPeer(id);
         const offer = await pc.createOffer();
+        
+//        this.ms.getTracks().forEach(track =>
+//            pc.addTrack(track, this.ms)
+//        );
+        
         await pc.setLocalDescription(offer);
+        
         this.sendSignal({type: "call", dest: id, offer});
         const answer = await new Promise((resolve, reject) => {
             this.on("call-answer", ev => {
@@ -147,6 +158,11 @@ export class Room extends User
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
         const answer = await pc.createAnswer();
+        
+//        this.ms.getTracks().forEach(track =>
+//            pc.addTrack(track, this.ms)
+//        );
+        console.log("answering")
         await pc.setLocalDescription(answer);
         this.sendSignal({type: "call", dest: id, answer});
         this.trigger("call-answered", {id})
