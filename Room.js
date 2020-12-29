@@ -16,7 +16,7 @@ export class Room extends User
         this.on("call-track", ev => this.cast(ev.detail));
 //        this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
-            console.log("### "+ev.detail.state)
+            console.log("### " + ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":
@@ -28,16 +28,6 @@ export class Room extends User
         });
     }
 
-    cast(msg)
-    {
-        const {id, track, streams} = msg;
-        console.log(msg)
-        //this.ms.addTrack(track)
-        for (var i in this.peers)
-            //if (i!=id)
-                this.peers[id].addTrack(track, this.ms)
-        
-    }
 
     handle_chat(msg)
     {
@@ -127,6 +117,10 @@ export class Room extends User
             this.sendSignal({type: "call", dest: id, ice: ice.candidate})
         );
         this.peers[id] = pc
+        
+        
+        pc.ms= new MediaStream()
+        
         return pc;
     }
 
@@ -134,13 +128,13 @@ export class Room extends User
     {
         const pc = this.getPeer(id);
         const offer = await pc.createOffer();
-        
+
 //        this.ms.getTracks().forEach(track =>
 //            pc.addTrack(track, this.ms)
 //        );
-        
+
         await pc.setLocalDescription(offer);
-        
+
         this.sendSignal({type: "call", dest: id, offer});
         const answer = await new Promise((resolve, reject) => {
             this.on("call-answer", ev => {
@@ -158,7 +152,7 @@ export class Room extends User
         const pc = this.getPeer(id);
         await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
         const answer = await pc.createAnswer();
-        
+
 //        this.ms.getTracks().forEach(track =>
 //            pc.addTrack(track, this.ms)
 //        );
@@ -182,6 +176,36 @@ export class Room extends User
         this.peers[id].close();
         this.trigger("call-state", {id, state: this.peers[id].connectionState})
         this.sendSignal({type: "call", dest: id, terminate: 1});
+    }
+    
+    
+    cast(msg)
+    {
+        const {id, track, streams} = msg;
+//        console.log(msg, track.id)
+//        //this.ms.addTrack(track)
+//        
+//        //const ntrack = this.peers[id].addTransceiver(track.kind).receiver.track;
+//        for (var i in this.peers)
+//            //if (i != msg.id)
+//            {
+//                
+//                console.log(`forwarding stream from ${id} to ${i}, ${track.kind}`)
+//                //this.peers[i].addTrack(ntrack)
+//                //this.peers[i].addTransceiver(track.kind)
+//                this.peers[i].addTrack(track)
+//            }
+
+
+        this.ms.addTrack(track)
+        
+        for (var i in this.peers)
+            //if (i!=id)
+                this.peers[i].addTrack(track,this.ms),console.log(`adding track from ${id} to ${i}`)
+
+
+
+
     }
 
 }

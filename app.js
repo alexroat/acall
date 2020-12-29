@@ -56,14 +56,24 @@ export  class App extends MessageHandler
 
 
         this.app.use(express.static(__dirname + '/public'));
+        
+        
+        
         this.app.get("*", (req, res, next) => {
+            console.log(req.url)
+            if (req.url!="/stocazzo")
+                return res.send("CIAO! Work in progress")
+               
+            
             //console.log(req.url)
             console.log("get", req.session.uid)
             const u = User.getUser(req.session.uid) || new User();
             req.session.uid = u.id;
-            res.sendFile(__dirname + "/public/index.html")
+            res.sendFile(__dirname + "/public/app.html")
         })
 
+
+        
         
 
     }

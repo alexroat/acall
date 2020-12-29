@@ -67,7 +67,7 @@ export class PanelCall extends Box
         this.peers = {}
         this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
         this.on("call-answered", ev => this.getVideo(ev.detail.id));
-        this.on("call-track", ev => this.getVideo(ev.detail.id).play(ev.detail.streams[0]));
+        this.on("call-track", ev => {console.log("NEW TRACK",ev.detail);this.getVideo(ev.detail.id).play(ev.detail.streams[0])});
         this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
             console.log("### "+ev.detail.state)
