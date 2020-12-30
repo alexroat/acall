@@ -3,7 +3,7 @@ import PanelContacts from "./PanelContacts"
 import PanelChat from "./PanelChat"
 import {PanelCall} from "./PanelCall"
 
-window.Wdg=Wdg;
+        window.Wdg = Wdg;
 
 export default class ACallApp extends App
 {
@@ -11,7 +11,7 @@ export default class ACallApp extends App
     {
         super(props)
         ACallApp.state = {name: "user", contacts: {}, messages: {}}
-        this.header = new ColoredBox().appendTo(this, {w: "auto"}).text("A Call")
+        this.header = new Box().appendTo(this, {w: "auto"}).text("A Call").css({padding: 5})
         this.main = new Box().appendTo(this, {p: 1})
         this.footer = new ColoredBox().appendTo(this, {w: 30})
         this.panelCall = new PanelCall().appendTo(this, {ignore: 1}).toggle(false).expand();
@@ -23,10 +23,8 @@ export default class ACallApp extends App
 
 
         this.panelCall.on("call-txsignal", ev => this.sendMessage(ev.detail))
-        
+
     }
-    
-    
 
     async showCallAnswerDialog(msg)
     {
@@ -68,7 +66,7 @@ export default class ACallApp extends App
     {
         if (msg.offer)
             this.panelCall.toggle(true).doLayout()
-        this.panelCall.trigger("call-rxsignal", msg)
+        this.panelCall.signal(msg)
     }
 
     createRoom()

@@ -34,7 +34,7 @@ module.exports = {
     mode: 'development',
     plugins: [new webpack.ProgressPlugin()],
     entry: {
-        bundle: ['@babel/polyfill','./frontend/index.js']
+        bundle: ['@babel/polyfill', './frontend/index.js']
     },
     output: {
         path: path.resolve(__dirname, 'public/javascripts'),
@@ -76,5 +76,12 @@ module.exports = {
         minimizer: [new TerserPlugin()],
 
         splitChunks: false
-    }
+    },
+    plugins: [
+        // fix "process is not defined" error:
+        // (do "npm install process" before running the build)
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+        }),
+    ]
 }

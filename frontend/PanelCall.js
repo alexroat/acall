@@ -1,7 +1,7 @@
-import {Box, Html, Icon, FloatingAction} from "wdg";
+import {Box, Html, Icon, FloatingAction, App, ColoredBox} from "wdg";
+import Peer from "simple-peer"
 
-
-const closeStream = (s) => s&& s.getTracks().forEach(t => t.stop())
+        const closeStream = (s) => s && s.getTracks().forEach(t => t.stop())
 
 
 export class PanelVideo extends Html.Div
@@ -20,7 +20,7 @@ export class PanelVideo extends Html.Div
         })
 
     }
-    
+
     setMuted(muted)
     {
         this.video.attr({muted})
@@ -67,10 +67,13 @@ export class PanelCall extends Box
         this.peers = {}
         this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
         this.on("call-answered", ev => this.getVideo(ev.detail.id));
-        this.on("call-track", ev => {console.log("NEW TRACK",ev.detail);this.getVideo(ev.detail.id).play(ev.detail.streams[0])});
+        this.on("call-track", ev => {
+            console.log("NEW TRACK", ev.detail);
+            this.getVideo(ev.detail.id).play(ev.detail.streams[0])
+        });
         this.on("call-terminate", ev => this.terminate(ev.detail.from))
         this.on("call-state", ev => {
-            console.log("### "+ev.detail.state)
+            console.log("### " + ev.detail.state)
             switch (ev.detail.state)
             {
                 case "disconnected":
@@ -93,13 +96,13 @@ export class PanelCall extends Box
                 console.error('Error adding received ice candidate', e, msg.ice);
             }
         });
-
         this.on("call-rxsignal", ev =>
             this.recvSignal(ev.detail)
         );
-
         new FloatingButton({icon: "phone", ignore: true}).toggleClass("calldrop").appendTo(this).on("click", ev => this.drop())
 
+
+        //new ColoredBox().appendTo(this,{p:1});
     }
 
     async toggleLocalVideo(enable)
@@ -108,11 +111,10 @@ export class PanelCall extends Box
         if (enable)
         {
             const ls = await this.getLocalStream();
-            const s= new MediaStream(ls.getVideoTracks())
+            const s = new MediaStream(ls.getVideoTracks())
             lv.play(s)
-        }
-        else
-            this.stopLocalStream(),lv.stop();
+        } else
+            this.stopLocalStream(), lv.stop();
     }
 
     recvSignal(msg)
@@ -166,92 +168,103 @@ export class PanelCall extends Box
         })
 
     }
-    
-    
+
     async getLocalStream()
     {
         if (!this.localstream)
-            this.localstream=await this.getUserMedia()
+            this.localstream = await this.getUserMedia()
         return this.localstream;
     }
-    
+
     async stopLocalStream()
     {
         closeStream(this.localstream)
-        this.localstream=null;
+        this.localstream = null;
     }
 
-    async call(id)
+    createPeer(id, dest, opt)
     {
-        const pc = this.getPeer(id);
-        await this.toggleLocalVideo(true)
-        const stream=await this.getLocalStream()
-        stream.getTracks().forEach(track =>
-            pc.addTrack(track, stream)
-        );
+        const pc = new Peer(opt)
+        pc.on("signal", signal => App.get().sendMessage({type: "call", id, dest, signal}))
+        pc.on("connect", async _ =>
+        {
+            this.toggle(true)
+            console.log("connected", pc)
+            const localstream = await this.getUserMedia();
+            pc.addStream(localstream)
+//
+//            var ms = new MediaStream(localstream.getTracks().map(t => t.clone()))
+//            pc.addStream(ms)
+//            console.log(ms.id)
+//            var ms = new MediaStream(localstream.getTracks().map(t => t.clone()))
+//            pc.addStream(ms)
+//            console.log(ms.id)
+        })
+        pc.on('stream', stream => {
+            console.log(stream.id)
+            new PanelVideo().appendTo(this, {p: 1}, true).play(stream)
 
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        this.sendSignal({type: "call", dest: id, offer});
-        const answer = await new Promise((resolve, reject) => {
-            this.on("call-answer", ev => {
-                if (ev.detail.from == id)
-                    resolve(ev.detail.answer);
-            })
-        });
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            stream.addEventListener('removetrack', t => console.log("TRACK REMOVED"));
+        })
+        const close = _ => {
+            console.log(`closing ${id}`)
+            delete this.peers[id];
+            this.toggle(!!Object.entries(this.peers).length)
+        };
+        pc.on('close', close)
+        pc.on('error', close)
+        this.peers[id] = pc;
         return pc;
+    }
+
+    getVideoByPc(pc)
+    {
+        return this.find(VideoPanel).filter(p => p.props.pc == pc)
+    }
+
+    getVideoByStream(stream)
+    {
+        return this.find(VideoPanel).filter(p => p.video.srcObj == stream)
+    }
+
+    getVideoById(id)
+    {
+        return this.find(VideoPanel).filter(p => p.props.id == id)
+    }
+
+    async call(dest)
+    {
+
+        const pc = this.createPeer(Math.random(), dest, {configuration, initiator: true})
+
+    }
+
+    signal(msg)
+    {
+        const {id, signal, from} = msg;
+        if (!this.peers[id])
+            this.createPeer(id, from, {configuration})
+        if (signal)
+            setTimeout(() => this.peers[id].signal(signal), 0);
     }
 
     async answer(msg)
     {
-        const id = msg.from;
-        const pc = this.getPeer(id);
-        await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-        await this.toggleLocalVideo(true)
-        const stream=await this.getLocalStream()
-        stream.getTracks().forEach(track =>
-            pc.addTrack(track, stream)
-        );
 
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        this.sendSignal({type: "call", dest: id, answer});
-        this.trigger("call-answered", {id})
-        return pc;
     }
 
-    async drop()
+    async drop(id)
     {
-        for (var id in this.peers)
-            this.terminate(id);
+        if (this.peers[id])
+            this.peers[id].destroy();
+        if (!id)
+            for (var id in this.peers)
+                this.drop(id)
     }
 
     async terminate(id)
     {
-        if (!this.peers[id])
-            return;
-        this.peers[id].close();
-        this.trigger("call-state", {id, state: this.peers[id].connectionState})
-        this.sendSignal({type: "call", dest: id, terminate: 1});
-    }
 
-    getPeer(id)
-    {
-        if (this.peers[id])
-            return this.peers[id];
-        const pc = new RTCPeerConnection(configuration);
-        pc.addEventListener("connectionstatechange", ev =>
-            this.trigger("call-state", {id, state: pc.connectionState})
-        )
-        pc.addEventListener("track", ev =>
-            this.trigger("call-track", {id, track: ev.track, streams: ev.streams})
-        )
-        pc.addEventListener('icecandidate', ice =>
-            this.sendSignal({type: "call", dest: id, ice: ice.candidate})
-        );
-        this.peers[id] = pc
-        return pc;
     }
 
 }

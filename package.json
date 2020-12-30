@@ -18,6 +18,8 @@
         "mediasoup": "^3.6.29",
         "node-persist": "^3.1.0",
         "node-turn": "0.0.6",
+        "process": "^0.11.10",
+        "simple-peer": "^9.9.3",
         "wdg": "^1.0.2",
         "wrtc": "^0.4.6"
     },
