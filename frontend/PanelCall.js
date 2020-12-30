@@ -65,43 +65,7 @@ export class PanelCall extends Box
     {
         super(props)
         this.peers = {}
-        this.on("call-offer", ev => this.showCallAnswerDialog(ev.detail))
-        this.on("call-answered", ev => this.getVideo(ev.detail.id));
-        this.on("call-track", ev => {
-            console.log("NEW TRACK", ev.detail);
-            this.getVideo(ev.detail.id).play(ev.detail.streams[0])
-        });
-        this.on("call-terminate", ev => this.terminate(ev.detail.from))
-        this.on("call-state", ev => {
-            console.log("### " + ev.detail.state)
-            switch (ev.detail.state)
-            {
-                case "disconnected":
-                case "closed":
-                    const id = ev.detail.id;
-                    this.getVideo(id).close()
-                    delete this.peers[id];
-                    if (!Object.entries(this.peers).length)
-                        this.toggle(false).toggleLocalVideo(false)
-                    break;
-            }
-        });
-        this.on("call-ice", async ev => {
-            const msg = ev.detail;
-            const id = msg.from;
-            const pc = this.getPeer(id);
-            try {
-                await pc.addIceCandidate(new RTCIceCandidate(msg.ice));
-            } catch (e) {
-                console.error('Error adding received ice candidate', e, msg.ice);
-            }
-        });
-        this.on("call-rxsignal", ev =>
-            this.recvSignal(ev.detail)
-        );
         new FloatingButton({icon: "phone", ignore: true}).toggleClass("calldrop").appendTo(this).on("click", ev => this.drop())
-
-
         //new ColoredBox().appendTo(this,{p:1});
     }
 
@@ -115,35 +79,6 @@ export class PanelCall extends Box
             lv.play(s)
         } else
             this.stopLocalStream(), lv.stop();
-    }
-
-    recvSignal(msg)
-    {
-        if (msg.offer)
-        {
-            //console.log("OFFER", msg)
-            this.trigger("call-offer", msg)
-        }
-        if (msg.answer)
-        {
-            //console.log("ANSWER", msg)
-            this.trigger("call-answer", msg)
-        }
-        if (msg.ice)
-        {
-            //console.log("ICE", msg)
-            this.trigger("call-ice", msg)
-        }
-        if (msg.terminate)
-        {
-            //console.log("TERMINATE", msg)
-            this.trigger("call-terminate", msg)
-        }
-    }
-
-    sendSignal(msg)
-    {
-        this.trigger("call-txsignal", msg);
     }
 
     async showCallAnswerDialog(msg)
@@ -192,17 +127,10 @@ export class PanelCall extends Box
             console.log("connected", pc)
             const localstream = await this.getUserMedia();
             pc.addStream(localstream)
-//
-//            var ms = new MediaStream(localstream.getTracks().map(t => t.clone()))
-//            pc.addStream(ms)
-//            console.log(ms.id)
-//            var ms = new MediaStream(localstream.getTracks().map(t => t.clone()))
-//            pc.addStream(ms)
-//            console.log(ms.id)
         })
         pc.on('stream', stream => {
             console.log(stream.id)
-            new PanelVideo().appendTo(this, {p: 1}, true).play(stream)
+            new PanelVideo({pc, id, user: dest}).appendTo(this, {p: 1}, true).play(stream)
 
             stream.addEventListener('removetrack', t => console.log("TRACK REMOVED"));
         })
@@ -262,10 +190,6 @@ export class PanelCall extends Box
                 this.drop(id)
     }
 
-    async terminate(id)
-    {
-
-    }
 
 }
 
