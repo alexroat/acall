@@ -65,6 +65,7 @@ export class PanelCall extends Box
     {
         super(props)
         this.peers = {}
+        this.streams={}
         new FloatingButton({icon: "phone", ignore: true}).toggleClass("calldrop").appendTo(this).on("click", ev => this.drop())
         //new ColoredBox().appendTo(this,{p:1});
     }
@@ -124,18 +125,14 @@ export class PanelCall extends Box
         pc.on("connect", async _ =>
         {
             this.toggle(true)
-            console.log("connected", pc)
             const localstream = await this.getUserMedia();
             pc.addStream(localstream)
         })
-        pc.on('stream', stream => {
-            console.log(stream.id)
-            new PanelVideo({pc, id, user: dest}).appendTo(this, {p: 1}, true).play(stream)
-
-            stream.addEventListener('removetrack', t => console.log("TRACK REMOVED"));
-        })
+        pc.on('stream', stream =>
+            this.addStream(stream, pc, id, dest)
+        )
         const close = _ => {
-            console.log(`closing ${id}`)
+            Object.values(this.streams).filter(s => s.pc == pc).forEach(s => this.removeStream(s))
             delete this.peers[id];
             this.toggle(!!Object.entries(this.peers).length)
         };
@@ -143,6 +140,19 @@ export class PanelCall extends Box
         pc.on('error', close)
         this.peers[id] = pc;
         return pc;
+    }
+    addStream(stream, pc, id, dest)
+    {
+        stream.pc = pc;
+        stream.addEventListener('removetrack', t => stream.getTracks().length == 0 && this.removeStream(stream));
+        const pv = new PanelVideo({pc, id, user: dest}).appendTo(this, {p: 1}, true);
+        pv.play(stream)
+        this.streams[stream.id] = stream;
+    }
+    removeStream(stream)
+    {    
+        this.find(PanelVideo).filter(pv => pv.getStream() == stream).forEach(pv => pv.remove(true))
+        delete this.streams[stream.id];
     }
 
     getVideoByPc(pc)
@@ -152,7 +162,7 @@ export class PanelCall extends Box
 
     getVideoByStream(stream)
     {
-        return this.find(VideoPanel).filter(p => p.video.srcObj == stream)
+        return this.find(VideoPanel).filter(p => p.getStream() == stream)
     }
 
     getVideoById(id)
@@ -189,7 +199,6 @@ export class PanelCall extends Box
             for (var id in this.peers)
                 this.drop(id)
     }
-
 
 }
 

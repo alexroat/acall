@@ -11,8 +11,7 @@ export class Room extends User
         this.name = `Room ${this.id}`
         this.peers = {};
         this._evl = {};
-
-
+        this.streams = {};
     }
 
     handle_chat(msg)
@@ -56,36 +55,28 @@ export class Room extends User
     {
         console.log("CREATING PEER", id, dest)
         const pc = new Peer({wrtc, ...opt})
-        pc.streams = {}
+        pc.id = id
         pc.on("signal", signal => User.getUser(dest).postMessage({type: "call", id, dest, signal}))
         pc.on("connect", async _ =>
         {
-            //console.log("connected", pc)
+            for (var i in this.streams)
+                pc.addStream(this.streams[i])
         })
         pc.on('stream', stream => {
-            console.log(stream.id)
-            pc.streams[stream.id] = stream;
+            stream.pc = pc;
+            this.streams[stream.id] = stream
+            stream.addEventListener("removetrack", t => console.log("TRACK REMOVED", t))
             //cast stream to all the conenctions
             for (var i in this.peers)
-                try
-                {
-                    this.peers[i].addStream(stream)
-                } catch (e)
-                {
-                }
-
+                this.peers[i].addStream(stream)
         })
         const close = _ => {
             console.log(`closing ${id}`)
-            for (var i in this.peers)
-                for (var sid in pc.streams)
-                    try
-                    {
-                        this.peers[i].removeStream(pc.streams[sid])
-                    } catch (e)
-                    {
-                    }
-            delete this.peers[i];
+            Object.values(this.streams).filter(s => s.pc == pc).forEach(s => {
+                Object.values(this.peers).filter(p => p != pc).forEach(p => p.removeStream(s));
+                delete this.streams[s.id];
+            })
+            delete this.peers[id];
         };
         pc.on('close', close)
         pc.on('error', close)
