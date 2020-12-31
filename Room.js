@@ -1,5 +1,4 @@
 import {User} from "./all";
-//const wrtc = {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, MediaStream} = require('wrtc');
 import wrtc, {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, MediaStream} from "wrtc"
 import Peer from 'simple-peer'
 
@@ -58,30 +57,30 @@ export class Room extends User
         pc.id = id
         pc.on("signal", signal => User.getUser(dest).postMessage({type: "call", id, dest, signal}))
         pc.on("connect", async _ =>
-        {
-            for (var i in this.streams)
-                pc.addStream(this.streams[i])
-        })
-        pc.on('stream', stream => {
-            stream.pc = pc;
-            this.streams[stream.id] = stream
-            stream.addEventListener("removetrack", t => console.log("TRACK REMOVED", t))
-            //cast stream to all the conenctions
-            for (var i in this.peers)
-                this.peers[i].addStream(stream)
-        })
+            Object.values(this.streams).filter(stream => stream.pc != pc).forEach(stream => pc.addStream(stream))
+        )
+        pc.on('stream', stream => this.addStream(stream, pc, id, dest))
         const close = _ => {
-            console.log(`closing ${id}`)
-            Object.values(this.streams).filter(s => s.pc == pc).forEach(s => {
-                Object.values(this.peers).filter(p => p != pc).forEach(p => p.removeStream(s));
-                delete this.streams[s.id];
-            })
+            Object.values(this.streams).filter(stream => stream.pc == pc).forEach(stream => this.removeStream(stream))
             delete this.peers[id];
         };
         pc.on('close', close)
         pc.on('error', close)
         this.peers[id] = pc;
         return pc;
+    }
+    addStream(stream, pc, id, dest)
+    {
+        stream.pc = pc;
+        stream.addEventListener('removetrack', t => stream.getTracks().length == 0 && this.removeStream(stream));
+        this.streams[stream.id] = stream;
+        //cast stream to all the conenctions
+        Object.values(this.peers).filter(p=>p!=stream.pc).forEach(p=>p.addStream(stream))
+    }
+    removeStream(stream)
+    {
+        Object.values(this.peers).filter(p => p != stream.pc).forEach(p => p.removeStream(stream));
+        delete this.streams[stream.id];
     }
 
     async call(dest)
