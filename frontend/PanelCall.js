@@ -27,19 +27,27 @@ export class PanelVideo extends Html.Div
         return this;
     }
 
-    async play(stream)
+    play(stream)
     {
-        this.video.el.srcObject = stream;
+        this.stream = stream;
+        return this;
     }
 
-    async stop()
+    stop()
     {
-        this.video.el.srcObject = null;
+        this.stream = null;
+        return this;
     }
 
-    getStream()
+    get stream()
     {
         return this.video.el.srcObject;
+    }
+    
+    set stream(s)
+    {
+        this.video.el.srcObject=s;
+        return s;
     }
 
     close()
@@ -49,6 +57,21 @@ export class PanelVideo extends Html.Div
         return this;
     }
 
+}
+
+
+class PanelVideoLocal extends PanelVideo
+{
+    set stream(s)
+    {
+        this._s=s
+        this.video.el.srcObject=s&&new MediaStream(s.getVideoTracks())
+        return s;
+    }
+    get stream()
+    {
+        return this._s;
+    }
 }
 
 export class FloatingButton extends Icon
@@ -126,6 +149,7 @@ export class PanelCall extends Box
         {
             this.toggle(true)
             const localstream = await this.getUserMedia();
+            new PanelVideoLocal().prependTo(this,{p:1},true).play(localstream)
             pc.addStream(localstream)
         })
         pc.on('stream', stream =>
@@ -134,7 +158,11 @@ export class PanelCall extends Box
         const close = _ => {
             Object.values(this.streams).filter(s => s.pc == pc).forEach(s => this.removeStream(s))
             delete this.peers[id];
-            this.toggle(!!Object.entries(this.peers).length)
+            if (!Object.entries(this.peers).length)
+            {
+                this.toggle(false)
+                this.find(PanelVideoLocal).forEach(pv=>pv.stop().remove(true))
+            }
         };
         pc.on('close', close)
         pc.on('error', close)
@@ -151,7 +179,7 @@ export class PanelCall extends Box
     }
     removeStream(stream)
     {    
-        this.find(PanelVideo).filter(pv => pv.getStream() == stream).forEach(pv => pv.remove(true))
+        this.find(PanelVideo).filter(pv => pv.stream == stream).forEach(pv => pv.remove(true))
         delete this.streams[stream.id];
     }
 
@@ -162,7 +190,7 @@ export class PanelCall extends Box
 
     getVideoByStream(stream)
     {
-        return this.find(VideoPanel).filter(p => p.getStream() == stream)
+        return this.find(VideoPanel).filter(p => p.stream == stream)
     }
 
     getVideoById(id)
